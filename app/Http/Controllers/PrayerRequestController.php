@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PrayerRequest;
 use App\Models\User;
 use App\Models\PrayerCount;
+use App\Models\PrayerRequestUpdate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,11 +48,11 @@ class PrayerRequestController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'request' => 'required|string',
+            'is_praise' => 'boolean',
         ]);
 
         $prayerRequest = PrayerRequest::create([
             ...$validated,
-            'is_praise' => $request->input('is_praise', false),
             'user_id' => Auth::id(),
             'organization_id' => Auth::user()->organization_id,
         ]);
@@ -93,21 +94,34 @@ class PrayerRequestController extends Controller
 
     public function wall()
     {
-        $requests = PrayerRequest::with('user')
+        $requests = PrayerRequest::with(['user', 'updates.user'])
             ->where('organization_id', Auth::user()->organization_id)
             ->latest()
-            ->paginate(10)
-            ->through(fn ($request) => [
-                'id' => $request->id,
-                'title' => $request->title ?? 'Prayer Request',
-                'content' => $request->request,
+            ->paginate(10);
+
+        $requests->through(fn ($request) => [
+            'id' => $request->id,
+            'title' => $request->title ?? 'Prayer Request',
+            'content' => $request->request,
+            'user' => [
+                'id' => $request->user?->id,
+                'name' => $request->user?->name ?? 'Anonymous',
+            ],
+            'user_id' => $request->user_id,
+            'created_at' => $request->created_at,
+            'prayer_count' => $request->prayer_count,
+            'is_praise' => $request->is_praise,
+            'updates' => $request->updates->map(fn ($update) => [
+                'id' => $update->id,
+                'update' => $update->update,
+                'created_at' => $update->created_at,
+                'user_id' => $update->user_id,
                 'user' => [
-                    'name' => $request->user?->name ?? 'Anonymous',
-                ],
-                'created_at' => $request->created_at,
-                'prayer_count' => $request->prayer_count,
-                'is_praise' => $request->is_praise,
-            ]);
+                    'id' => $update->user?->id,
+                    'name' => $update->user?->name
+                ]
+            ])
+        ]);
 
         return Inertia::render('PrayerWall', [
             'requests' => $requests
@@ -141,5 +155,52 @@ class PrayerRequestController extends Controller
         return back()->with([
             'prayer_count' => $prayerRequest->fresh()->prayer_count
         ]);
+    }
+
+    public function storeUpdate(Request $request, PrayerRequest $prayerRequest)
+    {
+        // Ensure user owns the prayer request
+        if ($request->user()->id !== $prayerRequest->user_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'update' => 'required|string'
+        ]);
+
+        $prayerRequest->updates()->create([
+            'update' => $validated['update'],
+            'user_id' => $request->user()->id
+        ]);
+
+        return back();
+    }
+
+    public function updateUpdate(Request $request, PrayerRequestUpdate $update)
+    {
+        // Ensure user owns the update
+        if ($request->user()->id !== $update->user_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'update' => 'required|string'
+        ]);
+
+        $update->update($validated);
+
+        return back();
+    }
+
+    public function destroyUpdate(PrayerRequestUpdate $update)
+    {
+        // Ensure user owns the update
+        if (request()->user()->id !== $update->user_id) {
+            abort(403);
+        }
+
+        $update->delete();
+
+        return back();
     }
 }

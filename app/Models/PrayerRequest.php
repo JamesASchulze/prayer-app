@@ -17,6 +17,11 @@ class PrayerRequest extends Model
         'organization_id',
         'request',
         'is_praise',
+        'updates',
+    ];
+
+    protected $casts = [
+        'is_praise' => 'boolean'
     ];
 
     public function user(): BelongsTo
@@ -39,5 +44,11 @@ class PrayerRequest extends Model
         return $this->prayerCounts()->count();
     }
 
+    public function updates(): HasMany
+    {
+        return $this->hasMany(PrayerRequestUpdate::class);
+    }
+
     protected $appends = ['prayer_count'];
+    protected $with = ['updates'];
 }

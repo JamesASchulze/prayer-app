@@ -15,6 +15,14 @@ const props = defineProps<{
         created_at: string;
         prayer_count?: number;
         is_praise?: boolean;
+        updates?: Array<{
+            id: number;
+            update: string;
+            created_at: string;
+            user: {
+                name: string;
+            };
+        }>;
     };
 }>();
 
@@ -30,7 +38,20 @@ const props = defineProps<{
             <span>{{ dayjs(request.created_at).fromNow() }}</span>
         </div>
         
-        <div class="flex items-center space-x-4">
+        <!-- Updates Section -->
+        <div v-if="request.updates?.length" class="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-900">Updates:</h4>
+            <div v-for="update in request.updates" :key="update.id" 
+                 class="border-l-4 border-gray-200 pl-4">
+                <p class="text-gray-600">{{ update.update }}</p>
+                <div class="mt-2 text-sm text-gray-500">
+                    Updated by {{ update.user?.name }} 
+                    {{ dayjs(update.created_at).fromNow() }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-4 mt-4">
             <PrayerButton
                 :request-id="request.id"
                 :initial-prayer-count="request.prayer_count || 0"

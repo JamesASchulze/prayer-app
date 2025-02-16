@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Request from '@/Components/Request.vue';
+import { Link, Head } from '@inertiajs/vue3';
 
 defineProps(['requests']);
 </script>

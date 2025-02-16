@@ -49,4 +49,15 @@ Route::post('/requests/{prayerRequest}/pray', [PrayerRequestController::class, '
     ->name('requests.pray')
     ->middleware(['auth']);
 
+Route::post('/requests/{prayerRequest}/updates', [PrayerRequestController::class, 'storeUpdate'])
+    ->name('requests.update.store')
+    ->middleware(['auth']);
+
+Route::middleware(['auth'])->group(function () {
+    Route::put('/requests/updates/{update}', [PrayerRequestController::class, 'updateUpdate'])
+        ->name('requests.updates.update');
+    Route::delete('/requests/updates/{update}', [PrayerRequestController::class, 'destroyUpdate'])
+        ->name('requests.updates.destroy');
+});
+
 require __DIR__.'/auth.php';
