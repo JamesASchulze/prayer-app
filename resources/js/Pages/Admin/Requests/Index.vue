@@ -10,14 +10,14 @@ const editingRequest = ref(null);
 const form = useForm({
     request: '',
     is_praise: false,
-    follow_up_email: '',
+    title: '',
 });
 
 const edit = (request) => {
-    editingRequest.value = request;
+    form.title = request.title;
     form.request = request.request;
     form.is_praise = request.is_praise;
-    form.follow_up_email = request.follow_up_email;
+    editingRequest.value = request;
 };
 
 const update = () => {
@@ -46,15 +46,25 @@ const destroy = (request) => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="request in requests" :key="request.id">
+                            <td class="px-6 py-4">
+                                <div v-if="editingRequest?.id === request.id">
+                                    <textarea
+                                        v-model="form.title" 
+                                        class="w-full rounded-md border-gray-300"
+                                        rows="3"
+                                    ></textarea>
+                                </div>
+                                <div v-else>{{ request.title }}</div>
+                            </td>
                             <td class="px-6 py-4">
                                 <div v-if="editingRequest?.id === request.id">
                                     <textarea
@@ -67,15 +77,10 @@ const destroy = (request) => {
                             </td>
                             <td class="px-6 py-4">
                                 <div v-if="editingRequest?.id === request.id">
+                                    <label class="flex items-center space-x-2">Praise?</label>
                                     <input type="checkbox" v-model="form.is_praise">
                                 </div>
                                 <div v-else>{{ request.is_praise ? 'Praise' : 'Request' }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div v-if="editingRequest?.id === request.id">
-                                    <input type="email" v-model="form.follow_up_email" class="rounded-md border-gray-300">
-                                </div>
-                                <div v-else>{{ request.follow_up_email }}</div>
                             </td>
                             <td class="px-6 py-4">{{ new Date(request.created_at).toLocaleDateString() }}</td>
                             <td class="px-6 py-4">

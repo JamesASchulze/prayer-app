@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\PrayerCount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,8 +19,13 @@ class PrayerRequestController extends Controller
      */
     public function index()
     {
+        $prayerRequests = PrayerRequest::where('organization_id', Auth::user()->organization_id)
+            ->with(['user', 'prayerCounts'])
+            ->latest()
+            ->get();
+
         return Inertia::render('Requests/Index', [
-            'requests' => PrayerRequest::latest()->first(),
+            'requests' => $prayerRequests
         ]);
     }
 
@@ -35,19 +42,21 @@ class PrayerRequestController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        \Log::info('Form submitted', $request->all()); // Add this debug line
+        // Log::info('Form submitted', $request->all());
 
         $validated = $request->validate([
-            'request' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'request' => 'required|string',
         ]);
 
-        $request->user()->requests()->create([
-            'request' => $validated['request'],
+        $prayerRequest = PrayerRequest::create([
+            ...$validated,
             'is_praise' => $request->input('is_praise', false),
-            'follow_up_email' => $request->input('follow_up_email'),
+            'user_id' => Auth::id(),
+            'organization_id' => Auth::user()->organization_id,
         ]);
 
-        return redirect(route('requests.index'));
+        return redirect()->route('requests.index');
     }
 
     /**
@@ -85,6 +94,7 @@ class PrayerRequestController extends Controller
     public function wall()
     {
         $requests = PrayerRequest::with('user')
+            ->where('organization_id', Auth::user()->organization_id)
             ->latest()
             ->paginate(10)
             ->through(fn ($request) => [
@@ -105,14 +115,14 @@ class PrayerRequestController extends Controller
     }
 
     public function dashboard()
-    {
-        $requests = PrayerRequest::all();
+    {   
+        $requests = PrayerRequest::where('organization_id', Auth::user()->organization_id)
+            ->get();
         $requestsCount = $requests->where('is_praise', false)->count();
         $praisesCount = $requests->where('is_praise', true)->count();
-        $users = User::count();
-        $allPrayers = PrayerCount::all();
-        $prayerCount = $allPrayers->count();
-        
+        $users = User::where('organization_id', Auth::user()->organization_id)->count();
+        $prayerCount = PrayerCount::where('organization_id', Auth::user()->organization_id)->count();
+
         return Inertia::render('Dashboard', [
             'requestCount' => $requestsCount,
             'praiseCount' => $praisesCount,
@@ -125,6 +135,7 @@ class PrayerRequestController extends Controller
     {
         $prayerRequest->prayerCounts()->create([
             'user_id' => $request->user()?->id,
+            'organization_id' => Auth::user()->organization_id,
         ]);
 
         return back()->with([

@@ -28,7 +28,7 @@ const pray = () => {
     form.post(route('requests.pray', props.requestId), {
         preserveScroll: true,
         onSuccess: () => {
-            prayerCount.value = form.recentlySuccessful ? props.initialPrayerCount + 1 : prayerCount.value;
+            prayerCount.value = form.recentlySuccessful ? props.initialPrayerCount : prayerCount.value;
         }
     });
 };

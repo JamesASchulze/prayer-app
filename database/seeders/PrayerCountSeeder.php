@@ -15,21 +15,25 @@ class PrayerCountSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get all prayer requests and users
-        $prayerRequests = PrayerRequest::all();
-        $users = User::all();
+        $organizations = User::select('organization_id')->distinct()->get();
 
-        // Create some sample prayer counts
-        foreach ($prayerRequests as $request) {
-            // Randomly select 1-3 users who prayed for each request
-            $randomUsers = $users->random(rand(1, 3));
-            
-            foreach ($randomUsers as $user) {
-                PrayerCount::create([
-                    'prayer_request_id' => $request->id,
-                    'user_id' => $user->id,
-                ]);
-            }
+        foreach ($organizations as $org) {
+            $orgUsers = User::where('organization_id', $org->organization_id)->get();
+            $orgPrayerRequests = PrayerRequest::where('organization_id', $org->organization_id)->get();
+
+            // For each prayer request in the organization, create some random prayer counts
+            $orgPrayerRequests->each(function ($prayerRequest) use ($orgUsers) {
+                // Create 1-5 random prayer counts for each request
+                $randomUsers = $orgUsers->random(rand(1, min(5, $orgUsers->count())));
+                
+                foreach ($randomUsers as $user) {
+                    PrayerCount::create([
+                        'user_id' => $user->id,
+                        'prayer_request_id' => $prayerRequest->id,
+                        'organization_id' => $user->organization_id,
+                    ]);
+                }
+            });
         }
     }
 }

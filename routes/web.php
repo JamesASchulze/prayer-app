@@ -25,9 +25,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::resource('requests', PrayerRequestController::class)
-    ->only(['index', 'store', 'create']);
+Route::middleware(['auth', 'organization'])->group(function () {
+    Route::resource('requests', PrayerRequestController::class)
+        ->only(['index', 'store', 'create']);
     // ->middleware(['auth', 'verified']);
+});
 
 // Admin routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {

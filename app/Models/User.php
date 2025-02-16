@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'organization_id',
     ];
 
     /**
@@ -56,5 +57,10 @@ class User extends Authenticatable
     public function requests(): HasMany
     {
         return $this->hasMany(PrayerRequest::class);
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

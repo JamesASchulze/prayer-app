@@ -10,6 +10,7 @@ class PrayerCount extends Model
     protected $fillable = [
         'prayer_request_id',
         'user_id',
+        'organization_id',
     ];
 
     public function prayerRequest(): BelongsTo
@@ -20,5 +21,15 @@ class PrayerCount extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function scopeForOrganization($query, $organizationId)
+    {
+        return $query->where('organization_id', $organizationId);
     }
 }

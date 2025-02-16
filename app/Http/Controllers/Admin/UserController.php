@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
     public function index()
     {
         return Inertia::render('Admin/Users/Index', [
-            'users' => User::latest()->get()
+            'users' => User::where('organization_id', Auth::user()->organization_id)
+                ->latest()
+                ->get()
         ]);
     }
 
@@ -31,8 +34,13 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::user()->id) {
             return redirect()->back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Ensure user belongs to same organization
+        if ($user->organization_id !== Auth::user()->organization_id) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
         $user->delete();

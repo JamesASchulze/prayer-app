@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('prayer_counts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('prayer_request_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }
