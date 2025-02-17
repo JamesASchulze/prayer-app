@@ -26,9 +26,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'organization'])->group(function () {
+    Route::put('/requests/{request}', [PrayerRequestController::class, 'update'])->name('requests.update');
     Route::resource('requests', PrayerRequestController::class)
-        ->only(['index', 'store', 'create']);
-    // ->middleware(['auth', 'verified']);
+        ->only(['index', 'store', 'create'])
+        ->except('update');
 });
 
 // Admin routes

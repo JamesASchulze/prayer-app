@@ -43,7 +43,7 @@ const showingNavigationDropdown = ref(false);
                                     :href="route('requests.index')"
                                     :active="route().current('requests.index')"
                                 >
-                                    Requests
+                                    My Requests
                                 </NavLink>
                                 <NavLink
                                     :href="route('prayer-wall')"
@@ -176,7 +176,7 @@ const showingNavigationDropdown = ref(false);
                             :href="route('requests.index')"
                             :active="route().current('requests.index')"
                         >
-                            Requests
+                            My Requests
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             v-if="$page.props.auth?.user?.is_admin"

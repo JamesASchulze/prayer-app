@@ -10,6 +10,7 @@ dayjs.extend(relativeTime);
 const props = defineProps(['request']);
 const showUpdateForm = ref(false);
 const editingUpdate = ref(null);
+const editingRequest = ref(false);
 
 const form = useForm({
     update: '',
@@ -17,6 +18,12 @@ const form = useForm({
 
 const editForm = useForm({
     update: '',
+});
+
+const requestForm = useForm({
+    title: props.request.title,
+    request: props.request.request,
+    is_praise: props.request.is_praise,
 });
 
 const submitUpdate = () => {
@@ -52,6 +59,28 @@ const deleteUpdate = (updateId) => {
         useForm().delete(route('requests.updates.destroy', updateId));
     }
 };
+
+const startEditingRequest = () => {
+    editingRequest.value = true;
+    requestForm.title = props.request.title;
+    requestForm.request = props.request.request;
+    requestForm.is_praise = props.request.is_praise;
+};
+
+const cancelEditingRequest = () => {
+    editingRequest.value = false;
+    requestForm.reset();
+};
+
+const submitRequestEdit = () => {
+    requestForm.put(route('requests.update', { request: props.request.id }), {
+        preserveScroll: true,
+        onSuccess: () => {
+            editingRequest.value = false;
+            requestForm.reset();
+        },
+    });
+};
 </script>
 
 <template>
@@ -60,118 +89,170 @@ const deleteUpdate = (updateId) => {
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         <div class="flex-1">
-            <h3 class="text-lg font-semibold">{{ request?.title }}</h3>
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="text-gray-800">{{ request?.user?.name }}</span>
-                    <small class="ml-2 text-sm text-gray-600">{{ dayjs(request?.created_at).fromNow() }}</small>
-                </div>
-            </div>
-            <p class="mt-4 text-lg text-gray-900">{{ request?.request }}</p>
-            
-            <!-- Updates Section -->
-            <div v-if="request.updates?.length" class="mt-6 space-y-4">
-                <h4 class="font-medium text-gray-900">Updates:</h4>
-                <div v-for="update in request.updates" :key="update.id" 
-                     class="bg-gray-50 rounded-lg p-4">
-                    <!-- Edit Form -->
-                    <div v-if="editingUpdate?.id === update.id">
-                        <form @submit.prevent="submitEdit">
-                            <textarea
-                                v-model="editForm.update"
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                rows="3"
-                            ></textarea>
-                            <div class="mt-2 flex justify-end space-x-2">
-                                <button
-                                    type="button"
-                                    @click="cancelEditing"
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    class="inline-flex items-center px-3 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
-                                    :disabled="editForm.processing"
-                                >
-                                    Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- Update Display -->
-                    <div v-else>
-                        <p class="text-gray-600">{{ update.update }}</p>
-                        <div class="mt-2 flex items-center justify-between">
-                            <span class="text-sm text-gray-500">
-                                Updated by {{ update.user?.name }} 
-                                {{ dayjs(update.created_at).fromNow() }}
-                            </span>
-                            <!-- Edit/Delete buttons (only show for update owner) -->
-                            <div v-if="update.user_id === $page.props.auth.user?.id" 
-                                 class="flex space-x-2">
-                                <button 
-                                    @click="startEditing(update)"
-                                    class="text-sm text-indigo-600 hover:text-indigo-900"
-                                >
-                                    Edit
-                                </button>
-                                <button 
-                                    @click="deleteUpdate(update.id)"
-                                    class="text-sm text-red-600 hover:text-red-900"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Update Button (only show for request owner) -->
-            <div v-if="request.user_id === $page.props.auth.user?.id" class="mt-4">
-                <button 
-                    @click="showUpdateForm = !showUpdateForm"
-                    class="text-sm text-indigo-600 hover:text-indigo-900"
-                >
-                    {{ showUpdateForm ? 'Cancel Update' : 'Add Update' }}
-                </button>
-
-                <!-- Update Form -->
-                <form v-if="showUpdateForm" @submit.prevent="submitUpdate" class="mt-4">
+            <!-- Edit Request Form -->
+            <div v-if="editingRequest">
+                <form @submit.prevent="submitRequestEdit">
+                    <input
+                        v-model="requestForm.title"
+                        type="text"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mb-4"
+                        placeholder="Title"
+                    >
                     <textarea
-                        v-model="form.update"
-                        placeholder="Share an update about this prayer request..."
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                        v-model="requestForm.request"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mb-4"
                         rows="3"
+                        placeholder="Prayer request"
                     ></textarea>
-                    <div class="mt-2 flex justify-end">
+                    <div class="flex items-center mb-4">
+                        <input
+                            type="checkbox"
+                            v-model="requestForm.is_praise"
+                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                        >
+                        <span class="ml-2">This is a praise report</span>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button
+                            type="button"
+                            @click="cancelEditingRequest"
+                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
                         <button
                             type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
-                            :disabled="form.processing"
+                            class="inline-flex items-center px-3 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
+                            :disabled="requestForm.processing"
                         >
-                            Post Update
+                            Save
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div v-if="request?.notes" class="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 class="text-sm font-medium text-gray-700">Additional Notes:</h4>
-                <p class="mt-1 text-gray-600">{{ request?.notes }}</p>
-            </div>
+            <!-- Request Display -->
+            <div v-else>
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">{{ request?.title }}</h3>
+                    <button 
+                        v-if="request.user_id === $page.props.auth.user?.id"
+                        @click="startEditingRequest"
+                        class="text-sm text-indigo-600 hover:text-indigo-900"
+                    >
+                        Edit Request
+                    </button>
+                </div>
+                <div>
+                    <span class="text-gray-800">{{ request?.user?.name }}</span>
+                    <small class="ml-2 text-sm text-gray-600">{{ dayjs(request?.created_at).fromNow() }}</small>
+                </div>
+                <p class="mt-4 text-lg text-gray-900">{{ request?.request }}</p>
+                
+                <!-- Updates Section -->
+                <div v-if="request.updates?.length" class="mt-6 space-y-4">
+                    <h4 class="font-medium text-gray-900">Updates:</h4>
+                    <div v-for="update in request.updates" :key="update.id" 
+                         class="bg-gray-50 rounded-lg p-4">
+                        <!-- Edit Form -->
+                        <div v-if="editingUpdate?.id === update.id">
+                            <form @submit.prevent="submitEdit">
+                                <textarea
+                                    v-model="editForm.update"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    rows="3"
+                                ></textarea>
+                                <div class="mt-2 flex justify-end space-x-2">
+                                    <button
+                                        type="button"
+                                        @click="cancelEditing"
+                                        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center px-3 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
+                                        :disabled="editForm.processing"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Update Display -->
+                        <div v-else>
+                            <p class="text-gray-600">{{ update.update }}</p>
+                            <div class="mt-2 flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    Updated by {{ update.user?.name }} 
+                                    {{ dayjs(update.created_at).fromNow() }}
+                                </span>
+                                <!-- Edit/Delete buttons (only show for update owner) -->
+                                <div v-if="update.user_id === $page.props.auth.user?.id" 
+                                     class="flex space-x-2">
+                                    <button 
+                                        @click="startEditing(update)"
+                                        class="text-sm text-indigo-600 hover:text-indigo-900"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button 
+                                        @click="deleteUpdate(update.id)"
+                                        class="text-sm text-red-600 hover:text-red-900"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <p class="mt-4 text-lg text-gray-900">Praise?: {{ request?.is_praise ? '✔️' : '❌' }}</p>
-            
-            <div class="mt-4">
-                <PrayerButton 
-                    :request-id="request.id"
-                    :initial-prayer-count="request.prayer_count"
-                    :is-praise="Boolean(request?.is_praise)"
-                />
+                <!-- Add Update Button (only show for request owner) -->
+                <div v-if="request.user_id === $page.props.auth.user?.id" class="mt-4">
+                    <button 
+                        @click="showUpdateForm = !showUpdateForm"
+                        class="text-sm text-indigo-600 hover:text-indigo-900"
+                    >
+                        {{ showUpdateForm ? 'Cancel Update' : 'Add Update' }}
+                    </button>
+
+                    <!-- Update Form -->
+                    <form v-if="showUpdateForm" @submit.prevent="submitUpdate" class="mt-4">
+                        <textarea
+                            v-model="form.update"
+                            placeholder="Share an update about this prayer request..."
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            rows="3"
+                        ></textarea>
+                        <div class="mt-2 flex justify-end">
+                            <button
+                                type="submit"
+                                class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
+                                :disabled="form.processing"
+                            >
+                                Post Update
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div v-if="request?.notes" class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-700">Additional Notes:</h4>
+                    <p class="mt-1 text-gray-600">{{ request?.notes }}</p>
+                </div>
+
+                <p class="mt-4 text-lg text-gray-900">Praise?: {{ request?.is_praise ? '✔️' : '❌' }}</p>
+                
+                <div class="mt-4">
+                    <PrayerButton 
+                        :request-id="request.id"
+                        :initial-prayer-count="request.prayer_count"
+                        :is-praise="Boolean(request?.is_praise)"
+                    />
+                </div>
             </div>
         </div>
     </div>

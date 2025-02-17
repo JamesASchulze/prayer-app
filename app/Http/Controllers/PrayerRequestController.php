@@ -20,7 +20,7 @@ class PrayerRequestController extends Controller
      */
     public function index()
     {
-        $prayerRequests = PrayerRequest::where('organization_id', Auth::user()->organization_id)
+        $prayerRequests = PrayerRequest::where('user_id', Auth::user()->id)
             ->with(['user', 'prayerCounts'])
             ->latest()
             ->get();
@@ -79,9 +79,22 @@ class PrayerRequestController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PrayerRequest $prayerRequest)
+    public function update(Request $httpRequest, PrayerRequest $request)
     {
-        //
+        // Ensure user owns the prayer request
+        if ($httpRequest->user()->id !== $request->user_id) {
+            abort(403);
+        }
+
+        $validated = $httpRequest->validate([
+            'title' => 'required|string|max:255',
+            'request' => 'required|string',
+            'is_praise' => 'boolean',
+        ]);
+
+        $request->update($validated);
+
+        return back();
     }
 
     /**
@@ -99,29 +112,32 @@ class PrayerRequestController extends Controller
             ->latest()
             ->paginate(10);
 
-        $requests->through(fn ($request) => [
-            'id' => $request->id,
-            'title' => $request->title ?? 'Prayer Request',
-            'content' => $request->request,
-            'user' => [
-                'id' => $request->user?->id,
-                'name' => $request->user?->name ?? 'Anonymous',
-            ],
-            'user_id' => $request->user_id,
-            'created_at' => $request->created_at,
-            'prayer_count' => $request->prayer_count,
-            'is_praise' => $request->is_praise,
-            'updates' => $request->updates->map(fn ($update) => [
-                'id' => $update->id,
-                'update' => $update->update,
-                'created_at' => $update->created_at,
-                'user_id' => $update->user_id,
+        // Transform the data after pagination
+        $requests->getCollection()->transform(function ($request) {
+            return [
+                'id' => $request->id,
+                'title' => $request->title ?? 'Prayer Request',
+                'content' => $request->request,
                 'user' => [
-                    'id' => $update->user?->id,
-                    'name' => $update->user?->name
-                ]
-            ])
-        ]);
+                    'id' => $request->user?->id,
+                    'name' => $request->user?->name ?? 'Anonymous',
+                ],
+                'user_id' => $request->user_id,
+                'created_at' => $request->created_at,
+                'prayer_count' => $request->prayer_count,
+                'is_praise' => $request->is_praise,
+                'updates' => $request->updates->map(fn ($update) => [
+                    'id' => $update->id,
+                    'update' => $update->update,
+                    'created_at' => $update->created_at,
+                    'user_id' => $update->user_id,
+                    'user' => [
+                        'id' => $update->user?->id,
+                        'name' => $update->user?->name
+                    ]
+                ])
+            ];
+        });
 
         return Inertia::render('PrayerWall', [
             'requests' => $requests
