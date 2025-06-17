@@ -1,0 +1,20 @@
+{
+    "name": "Laravel Dev Container",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "bmewburn.vscode-intelephense-client",
+                "Vue.volar",
+                "Vue.vscode-typescript-vue-plugin",
+                "bradlc.vscode-tailwindcss",
+                "mikestead.dotenv",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    },
+    "forwardPorts": [8000, 5173],
+    "postCreateCommand": "composer install && npm install && cp .env.example .env && php artisan key:generate && touch database/database.sqlite"
+}

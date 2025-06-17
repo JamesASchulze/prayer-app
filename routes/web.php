@@ -61,4 +61,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('requests.updates.destroy');
 });
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/requests/{prayerRequest}', [PrayerRequestController::class, 'show'])
+        ->name('requests.show');
+});
+
 require __DIR__.'/auth.php';

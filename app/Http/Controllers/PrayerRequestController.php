@@ -43,8 +43,6 @@ class PrayerRequestController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Log::info('Form submitted', $request->all());
-
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'request' => 'required|string',
@@ -57,6 +55,13 @@ class PrayerRequestController extends Controller
             'organization_id' => Auth::user()->organization_id,
         ]);
 
+        // Add the creator as a follower
+        Log::info('Adding creator as a follower');
+        $prayerRequest->followers()->attach(Auth::user()->id);
+        
+        // Notify followers about the new request
+        $prayerRequest->notifyFollowers();
+
         return redirect()->route('requests.index');
     }
 
@@ -65,7 +70,29 @@ class PrayerRequestController extends Controller
      */
     public function show(PrayerRequest $prayerRequest)
     {
-        //
+        return Inertia::render('Requests/Show', [
+            'request' => [
+                'id' => $prayerRequest->id,
+                'title' => $prayerRequest->title,
+                'request' => $prayerRequest->request,
+                'is_praise' => $prayerRequest->is_praise,
+                'created_at' => $prayerRequest->created_at,
+                'user' => [
+                    'id' => $prayerRequest->user->id,
+                    'name' => $prayerRequest->user->name
+                ],
+                'updates' => $prayerRequest->updates->map(fn($update) => [
+                    'id' => $update->id,
+                    'update' => $update->update,
+                    'created_at' => $update->created_at,
+                    'user' => [
+                        'id' => $update->user->id,
+                        'name' => $update->user->name
+                    ]
+                ]),
+                'prayer_count' => $prayerRequest->prayer_count
+            ]
+        ]);
     }
 
     /**
@@ -93,6 +120,9 @@ class PrayerRequestController extends Controller
         ]);
 
         $request->update($validated);
+
+        // Notify followers about the update
+        $request->notifyFollowers();
 
         return back();
     }

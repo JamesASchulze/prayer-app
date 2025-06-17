@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
+use App\Notifications\NewPrayerRequestNotification;
+use App\Notifications\PrayerRequestUpdateNotification;
+use Illuminate\Support\Facades\Log;
 
 class PrayerRequest extends Model
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'title',
@@ -47,6 +51,25 @@ class PrayerRequest extends Model
     public function updates(): HasMany
     {
         return $this->hasMany(PrayerRequestUpdate::class);
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'prayer_request_followers', 'prayer_request_id', 'user_id');
+    }
+
+    public function notifyFollowers($update = null)
+    {
+        Log::info('Notifying followers');
+        Log::info($this->followers);
+        Log::info($update);
+        foreach ($this->followers as $follower) {
+            if ($update) {
+                $follower->notify(new PrayerRequestUpdateNotification($update));
+            } else {
+                $follower->notify(new NewPrayerRequestNotification($this));
+            }
+        }
     }
 
     protected $appends = ['prayer_count'];
